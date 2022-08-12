@@ -89,8 +89,7 @@ obniz.onconnect = async () => {
                 processingTime = diffLikeCount * (ROTATE_TIME + STOP_TIME);
 
                 //likeの増加分だけ回す
-                diffLikeCount = 3
-                for(let i=0; i<diffLikeCount; i++){
+                for(let i=0; i<diffLikeCount*3; i++){
                     led.on();
                     servo02.angle(100.0);
                     await obniz.wait(150);
