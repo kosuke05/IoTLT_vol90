@@ -12,12 +12,11 @@ const Twitter = require("twitter");
 const client = new Twitter(JSON.parse(fs.readFileSync("secret_plant.json","utf-8")));
 const params = {Name: "python-test-iot"};
 
-// const ROTATE_TIME = 1500;
-// const STOP_TIME = 100;
-
-const ROTATE_TIME = 1000;
+const ROTATE_TIME = 500;
 const STOP_TIME = 80;
 
+// ツイートする内容
+BBQ_tweet = "テスト\n\n#IoTLT\n#morinaga"
 
 let processingTime = 0;
 let startTime;
@@ -31,19 +30,23 @@ obniz.onconnect = async () => {
     let servo01 = obniz.wired("ServoMotor",{ gnd:4, vcc:5, signal:6});
     let servo02 = obniz.wired("ServoMotor",{ gnd:8, vcc:9, signal:10 });
 
-    // let speaker = obniz.wired("Speaker",{ signal:9, gnd:10 });
+    await client.post('statuses/update', {status: BBQ_tweet}, function(error, tweet, response){
+        if (!error) {
+            console.log(tweet);
+        } else {
+            console.log('error');
+        }
+    });
 
-    obniz.repeat(async function(){
+    await obniz.repeat(async function(){
 
         await client.get('statuses/user_timeline', params, async function(error,tweets,response){
             // obniz.debugprint = true;
             if (error) {
                 console.log("error");
-                console.log(error);
                 return;
             }
 
-            console.log(tweets[0])
             let nowLikeCount = tweets[0].favorite_count;
             console.log("nowLikeCount:"+nowLikeCount);
 
@@ -53,24 +56,16 @@ obniz.onconnect = async () => {
 
                 //ここは1周目のときに通る
                 if(prevLikeCount === -1){
-                    startTime = new Date().getTime();
+                    startTime = new Date().getTime()
                     console.log("first like count:"+nowLikeCount)
                     obniz.display.clear(); // 画面を消去
                     obniz.display.print("like count:"+nowLikeCount);
+
+                    // 音楽を再生する
                     servo01.angle(160.0);
                     await obniz.wait(150);
                     console.log("音楽スタート")
                     servo01.angle(30.0);
-
-                    //サーバ立ち上げた時にすでにあるlike分シャボン玉飛ばす
-                    for(let i=0; i<nowLikeCount; i++){
-                        led.on();
-                        // speaker.play(200);
-                        await obniz.wait(ROTATE_TIME);
-                        led.off();
-                        // speaker.stop(); // 音をとめる
-                        await obniz.wait(STOP_TIME);    
-                    }
 
                     processingTime = 0;
                     prevLikeCount = nowLikeCount;
@@ -86,8 +81,6 @@ obniz.onconnect = async () => {
 
                 let diffLikeCount = nowLikeCount - prevLikeCount;
                 startTime = new Date().getTime();
-
-                // console.log("like added!");
                 console.log("like count:"+nowLikeCount);
                 obniz.display.clear(); // 画面を消去
                 obniz.display.print(`like added!`);
@@ -95,23 +88,20 @@ obniz.onconnect = async () => {
 
                 processingTime = diffLikeCount * (ROTATE_TIME + STOP_TIME);
 
-                //likeの増加分だけシャボン玉飛ばす
+                //likeの増加分だけ回す
+                diffLikeCount = 3
                 for(let i=0; i<diffLikeCount; i++){
                     led.on();
-                    // speaker.play(200);
-                    servo02.angle(170.0);
+                    servo02.angle(100.0);
                     await obniz.wait(150);
-                    servo02.angle(30.0);
+                    servo02.angle(60.0);
                     led.off();
-                    // speaker.stop(); // 音をとめる
                     await obniz.wait(STOP_TIME);
                 }
-                // servo02.angle(100.0);
                 processingTime = 0;
                 prevLikeCount = nowLikeCount;
 
             }else{
-                // console.log("not like added");
                 obniz.display.clear(); // 画面を消去
                 obniz.display.print(`not like!`);
                 prevLikeCount = nowLikeCount;
